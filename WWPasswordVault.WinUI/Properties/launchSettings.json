@@ -1,0 +1,10 @@
+{
+  "profiles": {
+    "WWPasswordVault.WinUI (Package)": {
+      "commandName": "MsixPackage"
+    },
+    "WWPasswordVault.WinUI (Unpackaged)": {
+      "commandName": "Project"
+    }
+  }
+}
