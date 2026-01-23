@@ -5,7 +5,7 @@ using System.Text;
 using System.Threading.Tasks;
 using WWPasswordVault.Core.Services.Authentication;
 using WWPasswordVault.Core.Services.Crypt;
-using WWPasswordVault.Core.Services.Hash;
+using WWPasswordVault.Core.Services.Key;
 using WWPasswordVault.Core.Services.Storage;
 using WWPasswordVault.Core.Services.User;
 using WWPasswordVault.WinUI.Services.Session;

@@ -91,7 +91,7 @@ namespace WWPasswordVault.WinUI.ViewModels
             if (CurrentUser == null)
                 return;
 
-            CoreService.Crypt.Encrypt(CurrentUser.Hash, Password, out byte[] ciphertext, out byte[] tag, out byte[] iv, out string version);
+            CoreService.Crypt.EncryptPasswordString(AppService.Session.VaultKey, Password, out byte[] ciphertext, out byte[] tag, out byte[] iv, out string version);
             EncryptedValue _encValue = new()
             {
                 _ciphertext = ciphertext,
@@ -123,14 +123,14 @@ namespace WWPasswordVault.WinUI.ViewModels
         {
             Username = string.Empty;
             Title = string.Empty;
-            Category = string.Empty;
+            SelectedCategory = string.Empty;
             Password = string.Empty;
         }
 
         private void transferCategorys()
         {
             SavedCategorys = new();
-            foreach( string entry in AppService.VaultEntrys.Categorys)
+            foreach( string entry in AppService.VaultEntrys.Categorys!)
             {
                 SavedCategorys.Add(entry);
             }

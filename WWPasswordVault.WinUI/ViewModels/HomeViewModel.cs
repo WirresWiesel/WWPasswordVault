@@ -204,7 +204,7 @@ namespace WWPasswordVault.WinUI.ViewModels
 
             if (SelectedVaultEntry != null)
             {
-                CoreService.Crypt.Decrypt(_currentUser.Hash, SelectedVaultEntry._password._iv, SelectedVaultEntry._password._ciphertext, SelectedVaultEntry._password._tag, out string _password);
+                CoreService.Crypt.DecryptPasswordString(AppService.Session.VaultKey, SelectedVaultEntry._password._iv, SelectedVaultEntry._password._ciphertext, SelectedVaultEntry._password._tag, out string _password);
                 return _password;
             }
             return string.Empty;
@@ -235,7 +235,7 @@ namespace WWPasswordVault.WinUI.ViewModels
 
                 if (!string.IsNullOrEmpty(ShownPassword))
                 {
-                    CoreService.Crypt.Encrypt(AppService.Session.CurrentUser!.Hash, ShownPassword, out byte[] _ciphertext, out byte[] _tag, out byte[] _iv, out string _version);
+                    CoreService.Crypt.EncryptPasswordString(AppService.Session.CurrentUser!.PasswordKey, ShownPassword, out byte[] _ciphertext, out byte[] _tag, out byte[] _iv, out string _version);
                     SelectedVaultEntry._password._ciphertext = _ciphertext;
                     SelectedVaultEntry._password._tag = _tag;
                     SelectedVaultEntry._password._iv = _iv;

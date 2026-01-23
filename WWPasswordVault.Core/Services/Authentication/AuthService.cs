@@ -7,19 +7,20 @@ using System.Threading.Tasks;
 using Windows.System;
 using WWPasswordVault.Core.Models;
 using WWPasswordVault.Core.Modifier;
-using WWPasswordVault.Core.Services.Hash;
+using WWPasswordVault.Core.Services.Key;
 using WWPasswordVault.Core.Services.Storage;
 using WWPasswordVault.Core.Services.User;
 using WWPasswordVault.Core.Services.WindowsCredential;
 using WWPasswordVault.Core.CoreServices;
 using Windows.ApplicationModel.AppService;
+using System.Security.Cryptography;
 
 namespace WWPasswordVault.Core.Services.Authentication
 {
     public class AuthService
     {
-        List<Models.AppUser> _registeredUsers = new List<Models.AppUser>();
-        List<Models.VaultEntry> _availableVaults = new List<Models.VaultEntry>();
+        private List<Models.AppUser> _registeredUsers = new List<Models.AppUser>();
+        private List<Models.VaultEntry> _availableVaults = new List<Models.VaultEntry>();
 
         public AuthService()
         {
@@ -40,26 +41,25 @@ namespace WWPasswordVault.Core.Services.Authentication
                 return null;
             }
 
-            CoreService.Hash.CreateHash(Password, null, out byte[] hash, out byte[] salt, out int iterations);
-            // Future implementation for user registration
+            // Create a new user and set basic informations and random salts
             Models.AppUser newUser = new Models.AppUser
             {
                 Username = Username,
-                Hash = hash,
                 IsRemembered = RememberMe,
-                Salt = salt,
-                Iterations = iterations,
+                PasswordKey = null,
+                PasswordSalt = RandomNumberGenerator.GetBytes(32),
+                VaultKeySalt = RandomNumberGenerator.GetBytes(32),
+                EncryptedVaultKey = null
             };
-            // Check if user already exists
-            _registeredUsers.Add(newUser);
-            CoreService.JsonUserStorage.SaveUserData(_registeredUsers);
+
+            // Set key for later verification at login
+            newUser.PasswordKey = CoreService.Key.CreateKey(Password, newUser.PasswordSalt);
             return newUser;
         }
 
         public bool LoginUser(string Username, string Password, bool RememberUser = false)
         {
             var user = _registeredUsers.FirstOrDefault(u => u.Username == Username);
-            bool _credentialsSafed = CoreService.Credentials.Exists(Username);
             bool returnValue = false;
 
             if (user == null)
@@ -68,7 +68,7 @@ namespace WWPasswordVault.Core.Services.Authentication
             }
             else
             {
-                switch (StateModifier.BooleanToIntState(RememberUser, _credentialsSafed))
+                switch (StateModifier.BooleanToIntState(RememberUser, user.HasCredentials))
                 {
                     case (int)StateModifier.State.PasswordLogin:
                         {
@@ -77,22 +77,25 @@ namespace WWPasswordVault.Core.Services.Authentication
                         break;
                     case (int)StateModifier.State.CredentialLogin:
                         {
-                            returnValue = this._credentialLogin(Password, user);
+                            returnValue = this._credentialLogin(user);
                         }
                         break;
                     case (int)StateModifier.State.DeleteCredentialThenPasswordLogin:
                         {
                             CoreService.Credentials.Delete(Username);
+                            user.HasCredentials = false;
                             returnValue = this._passwordLogin(Password, user);
                         }
                         break;
-                    case (int)StateModifier.State.SaveCredentialsThenCredentialLogin: // only when password is correct
+                    case (int)StateModifier.State.SaveCredentialsThenCredentialLogin:
                         {
-                            if (CoreService.Hash.VerifyPassword(Password, user.Hash, user.Salt, user.Iterations))
+                            if (CoreService.Key.VerifyString(Password, user.PasswordKey, user.PasswordSalt))
                             {
                                 Debug.WriteLine("[Info] AuthService: Create credentials and login.");
-                                CoreService.Credentials.Save(Username, user.Hash);
-                                returnValue = this._credentialLogin(Password, user);
+                                var _tmpKEK = CoreService.Key.CreateKey(Password, user.VaultKeySalt);
+                                CoreService.Crypt.DecryptVaultKey(_tmpKEK, user.EncryptedVaultKey._iv, user.EncryptedVaultKey._ciphertext, user.EncryptedVaultKey._tag, out byte[] vaultKey);
+                                CoreService.Credentials.Save(user.Username, vaultKey);
+                                returnValue = this._credentialLogin(user);
                             }
                             else
                             {
@@ -103,7 +106,6 @@ namespace WWPasswordVault.Core.Services.Authentication
                 }
                 _updateRememberMeStatus(user, RememberUser);
             }
-
             return returnValue;
         }
 
@@ -130,7 +132,7 @@ namespace WWPasswordVault.Core.Services.Authentication
 
         private bool _passwordLogin(string password, AppUser appUser)
         {
-            if (CoreService.Hash.VerifyPassword(password, appUser.Hash, appUser.Salt, appUser.Iterations))
+            if (CoreService.Key.VerifyString(password, appUser.PasswordKey, appUser.PasswordSalt))
             {
                 Debug.WriteLine("[Info] AuthService: Login Successful.");
                 return true;
@@ -138,9 +140,9 @@ namespace WWPasswordVault.Core.Services.Authentication
             return false;
         }
 
-        private bool _credentialLogin(string password, AppUser appUser)
+        private bool _credentialLogin(AppUser appUser)
         {
-            if (CoreService.Hash.VerifyPasswordKey(CoreService.Credentials.Load(appUser.Username), appUser.Hash))
+            if (CoreService.Credentials.Exists(appUser.Username))
             {
                 Debug.WriteLine("[Info] AuthService: Login via Windows Credentials Sucessful.");
                 return true;
@@ -151,6 +153,17 @@ namespace WWPasswordVault.Core.Services.Authentication
         public List<Models.AppUser> GetRegisteredUsers()
         {
             return _registeredUsers;
+        }
+
+        public void SaveUser(AppUser user)
+        {
+            _registeredUsers.Add(user);
+            CoreService.JsonUserStorage.SaveUserData(_registeredUsers);
+        }
+
+        public byte[] CreateKEK(AppUser user, string password)
+        {
+            return CoreService.Key.CreateKey(password, user.VaultKeySalt);
         }
     }
 }

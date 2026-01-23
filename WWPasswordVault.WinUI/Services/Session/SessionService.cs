@@ -9,11 +9,15 @@ using Windows.System;
 using WWPasswordVault.WinUI.AppServices;
 using WWPasswordVault.Core.CoreServices;
 using WWPasswordVault.Core.Models;
+using System.Security.Cryptography;
 
 namespace WWPasswordVault.WinUI.Services.Session
 {
     public class SessionService : ObservableObject
     {
+        public byte[]? VaultKey { get; set; } = null;
+        public byte[]? KEK { get; set; } = null;
+
         private bool _isLocked;
         public bool IsLocked
         {
@@ -57,6 +61,18 @@ namespace WWPasswordVault.WinUI.Services.Session
         public AppUser? GetCurrentUser()
         {
             return CurrentUser;
+        }
+
+        public void SetKEK(byte[] kek)
+        {
+            KEK = kek;
+        }
+
+        public void GenerateEncryptedVaultKey(AppUser user, byte[] KEK)
+        {
+            byte[] _vaultKey = RandomNumberGenerator.GetBytes(32);
+            user.EncryptedVaultKey = CoreService.Crypt.EncryptVaultKey(KEK, _vaultKey);
+            _vaultKey = new byte[32];
         }
     }
 }

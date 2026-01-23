@@ -3,9 +3,12 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.Linq;
 using System.Text;
+using System.Text.Json;
 using System.Threading.Tasks;
 using Windows.Security.Credentials;
+using WWPasswordVault.Core.CoreServices;
 using WWPasswordVault.Core.Interfaces;
+using WWPasswordVault.Core.Models;
 
 namespace WWPasswordVault.Core.Services.WindowsCredential
 {
@@ -42,7 +45,9 @@ namespace WWPasswordVault.Core.Services.WindowsCredential
 
                 credential.RetrievePassword();
 
-                return Convert.FromBase64String(credential.Password);
+                byte[] _vaultKey = Convert.FromBase64String(credential.Password);
+
+                return _vaultKey;
             }
             catch
             {

@@ -8,7 +8,7 @@ using System.Text;
 using System.Threading.Tasks;
 using System.Windows.Input;
 using WWPasswordVault.Core.Models;
-using WWPasswordVault.Core.Services.Hash;
+using WWPasswordVault.Core.Services.Key;
 using WWPasswordVault.WinUI.Services.Session;
 using WWPasswordVault.WinUI.AppServices;
 using System.Collections.ObjectModel;
@@ -54,29 +54,6 @@ namespace WWPasswordVault.WinUI.ViewModels
                 if (SetProperty(ref _rememberMe, value))
                 {
                     this.checkIfPasswordNeeded();
-                    /*
-                    Debug.WriteLine("[Info] LoginViewModel: RememberMe changed.");
-                    if (_rememberMe == false)
-                    {
-                        IsNeedingPassword = true;
-                    }
-                    else if (AppService.Session.CurrentUser != null && !AppService.Session.CurrentUser.HasCredentials)
-                    { 
-                        if (CoreService.Credentials.Exists(AppService.Session.CurrentUser.Username))
-                        {
-                            AppService.Session.CurrentUser.HasCredentials = true;
-                        }
-                        else
-                        {
-                            AppService.Session.CurrentUser.HasCredentials = false;
-                        }
-                    }
-                    else
-                    {
-                        IsNeedingPassword = false;
-                    }
-                    OnPropertyChanged(nameof(IsNeedingPassword));
-                    */
                 }
             }
         }
@@ -177,6 +154,7 @@ namespace WWPasswordVault.WinUI.ViewModels
         {
             if (_isRegisterMode)
             {
+                //Check on registration if the two passwords are the same
                 if (Password != ConfirmPassword)
                 {
                     InfoMessage = "Registration Failed: \nPasswords do not match.";
@@ -185,7 +163,12 @@ namespace WWPasswordVault.WinUI.ViewModels
                     return;
                 }
 
+                //Create/Register new user, then create the keys to safe the encryptedvault key in user.json
                 AppUser _newUser = CoreService.Auth.RegisterUser(Username, Password, RememberMe);
+                var _tmpKEK = CoreService.Auth.CreateKEK(_newUser, Password!);
+                AppService.Session.SetKEK(_tmpKEK);
+                AppService.Session.GenerateEncryptedVaultKey(_newUser, AppService.Session.KEK!);
+                CoreService.Auth.SaveUser(_newUser);
                 InfoMessage = "Registration done";
                 IsLoginInfoBarOpen = true;
                 IsRegisterMode = false;
@@ -202,6 +185,21 @@ namespace WWPasswordVault.WinUI.ViewModels
                 InfoMessage = "Login Failed: \nInvalid username or password.";
                 IsLoginInfoBarOpen = true;
                 return;
+            }
+            else
+            {
+                var _currentUser = AppService.Session.CurrentUser;
+                if (!_currentUser!.HasCredentials)
+                {
+                    var _tmpKEK = CoreService.Auth.CreateKEK(_currentUser, Password!);
+                    AppService.Session.SetKEK(_tmpKEK);
+                    CoreService.Crypt.DecryptVaultKey(AppService.Session.KEK, _currentUser!.EncryptedVaultKey._iv, _currentUser.EncryptedVaultKey._ciphertext, _currentUser.EncryptedVaultKey._tag, out byte[] vaultKey);
+                    AppService.Session.VaultKey = vaultKey;
+                }
+                else
+                {
+                    AppService.Session.VaultKey = CoreService.Credentials.Load(_currentUser!.Username);
+                }
             }
         }
 

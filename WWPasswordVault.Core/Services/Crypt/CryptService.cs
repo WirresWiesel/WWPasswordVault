@@ -5,12 +5,13 @@ using System.Linq;
 using System.Security.Cryptography;
 using System.Text;
 using System.Threading.Tasks;
+using WWPasswordVault.Core.Models;
 
 namespace WWPasswordVault.Core.Services.Crypt
 {
     public class CryptService
     {
-        public void Encrypt(byte[] key, string plaintext, out byte[] ciphertext, out byte[] tag, out byte[] iv, out string version)
+        public void EncryptPasswordString(byte[] key, string plaintext, out byte[] ciphertext, out byte[] tag, out byte[] iv, out string version)
         {
             // Encryption logic to be implemented
             Debug.WriteLine("[Info] CryptService: Encryption.");
@@ -28,7 +29,31 @@ namespace WWPasswordVault.Core.Services.Crypt
             version = "1.0";
         }
 
-        public void Decrypt(byte[] key, byte[] iv, byte[] ciphertext, byte[] tag, out string text)
+        public EncryptedValue EncryptVaultKey(byte[] KEK, byte[] vaultKey)
+        {
+            // Encryption logic to be implemented
+            Debug.WriteLine("[Info] CryptService: Encryption.");
+            byte[] _tag = new byte[16];
+            byte[] _iv = RandomNumberGenerator.GetBytes(12);
+            byte[] _vaultKey = vaultKey;
+            byte[] _cipher = new byte[_vaultKey.Length];
+
+            AesGcm aesGcm = new AesGcm(KEK, 16);
+            aesGcm.Encrypt(_iv, _vaultKey, _cipher, _tag);
+
+            string version = "1.0";
+
+            EncryptedValue _encryptedValue = new EncryptedValue
+            {
+                _ciphertext = _cipher,
+                _tag = _tag,
+                _iv = _iv,
+                _version = version
+            };
+            return _encryptedValue;
+        }
+
+        public void DecryptPasswordString(byte[] key, byte[] iv, byte[] ciphertext, byte[] tag, out string text)
         {
             // Decryption logic to be implemented
             Debug.WriteLine("[Info] CryptService: Decryption.");
@@ -36,6 +61,16 @@ namespace WWPasswordVault.Core.Services.Crypt
             byte[] decrypted = new byte[ciphertext.Length];
             aesGcm.Decrypt(iv, ciphertext, tag, decrypted);
             text = Encoding.UTF8.GetString(decrypted);
+        }
+
+        public void DecryptVaultKey(byte[] encryptedKey, byte[] iv, byte[] ciphertext, byte[] tag, out byte[] key)
+        {
+            // Decryption logic to be implemented
+            Debug.WriteLine("[Info] CryptService: Decryption.");
+            AesGcm aesGcm = new AesGcm(encryptedKey, tag.Length);
+            byte[] decrypted = new byte[ciphertext.Length];
+            aesGcm.Decrypt(iv, ciphertext, tag, decrypted);
+            key = decrypted;
         }
     }
 }
