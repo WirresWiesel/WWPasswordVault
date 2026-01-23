@@ -1,6 +1,3 @@
-Gerne 🙂
-Hier ist eine kurze, saubere README, wie sie gut zu einem GitHub-Projekt passt – nicht zu lang, aber professionell.
-
 🔐 WWPasswordVault
 
 WWPasswordVault is a modern password vault built with C# and WinUI 3.
