@@ -28,7 +28,7 @@ namespace WWPasswordVault.WinUI.Services.Session
             }
         }
 
-        private AppUser? _currentUser;
+        private AppUser? _currentUser = new();
         public AppUser? CurrentUser
         {
             get => _currentUser;
@@ -49,12 +49,17 @@ namespace WWPasswordVault.WinUI.Services.Session
             }
             else
             {
+                LockSession();
                 return false;
             }
         }
 
         public void SetCurrentUser(AppUser? user)
         {
+            if (user == null)
+            {
+                CurrentUser = null;
+            }
             CurrentUser = user;
         }
 

@@ -45,7 +45,9 @@
                     SelectedItem="{Binding SelectedUser, Mode=TwoWay}"
                     DisplayMemberPath="Username"
                     Text="{Binding Username, Mode=TwoWay}"
-                    IsEditable="True"/>
+                    IsEditable="True"
+                    IsTabStop="False"
+                    DropDownClosed="OnDropDownClosed"/>
 
                 <!-- Password -->
                 <PasswordBox
@@ -101,8 +103,65 @@
                         Content="Create new account"
                         Style="{StaticResource TextBlockButtonStyle}"
                         Command="{Binding RegisterButton}"/>
-                </StackPanel>
 
+                    <Button
+                        x:Name="DeleteUserButton"
+                        HorizontalAlignment="Center"
+                        Content="Delete User"
+                        Style="{StaticResource TextBlockButtonStyle}"
+                        Visibility="{Binding IsRegisteredUser}">
+
+                        <Button.Flyout>
+                            <Flyout>
+                                <Grid
+                                    Padding="12"
+                                    MinWidth="260"
+                                    MaxWidth="320">
+
+                                    <Grid.RowDefinitions>
+                                        <RowDefinition Height="Auto"/>
+                                        <RowDefinition Height="Auto"/>
+                                    </Grid.RowDefinitions>
+
+                                    <!-- Erklärung -->
+                                    <TextBlock Grid.Row="0" TextWrapping="Wrap" Margin="0,0,0,12">
+                                        <Run Text="Do you want to delete this user including all associated programs?"/>
+                                        <LineBreak/>
+                                        <LineBreak/>
+                                        <Run Text="Programs can be kept, but all passwords are cryptographically bound to the user and will become unusable."/>
+                                        <LineBreak/>
+                                        <Run Text="This action cannot be undone."/>
+                                    </TextBlock>
+
+                                    <!-- Buttons -->
+                                    <Grid
+                                        Grid.Row="1"
+                                        HorizontalAlignment="Center">
+
+                                        <Grid.ColumnDefinitions>
+                                            <ColumnDefinition Width="Auto"/>
+                                            <ColumnDefinition Width="12"/>
+                                            <ColumnDefinition Width="Auto"/>
+                                        </Grid.ColumnDefinitions>
+
+                                        <Button
+                                            Width="100"
+                                            Grid.Column="0"
+                                            Content="Delete user"
+                                            Command="{Binding DeleteUserOnlyButton}"/>
+
+                                        <Button
+                                            Width="100"
+                                            Grid.Column="2"
+                                            Content="Delete all"
+                                            Style="{ThemeResource AccentButtonStyle}"
+                                            Command="{Binding DeleteUserButton}"/>
+                                    </Grid>
+                                </Grid>
+                            </Flyout>
+                        </Button.Flyout>
+                    </Button>
+                </StackPanel>
             </StackPanel>
         </Border>
     </Grid>

@@ -13,6 +13,7 @@ using WWPasswordVault.WinUI.Services.Session;
 using WWPasswordVault.WinUI.AppServices;
 using System.Collections.ObjectModel;
 using WWPasswordVault.Core.CoreServices;
+using Microsoft.UI.Xaml.Controls;
 
 namespace WWPasswordVault.WinUI.ViewModels
 {
@@ -21,6 +22,8 @@ namespace WWPasswordVault.WinUI.ViewModels
         #region Commands
         public IRelayCommand LoginButton { get; }
         public IRelayCommand RegisterButton { get; }
+        public IRelayCommand DeleteUserButton { get; }
+        public IRelayCommand DeleteUserOnlyButton { get; }
         #endregion
 
         #region Observable Properties
@@ -31,15 +34,15 @@ namespace WWPasswordVault.WinUI.ViewModels
             set => SetProperty(ref _username, value);
         }
 
-        private string? _password;
-        public string? Password
+        private string _password = string.Empty;
+        public string Password
         {
             get => _password;
             set => SetProperty(ref _password, value);
         }
 
-        private string? _confirmPassword;
-        public string? ConfirmPassword
+        private string _confirmPassword = string.Empty;
+        public string ConfirmPassword
         {
             get => _confirmPassword;
             set => SetProperty(ref _confirmPassword, value);
@@ -53,7 +56,7 @@ namespace WWPasswordVault.WinUI.ViewModels
             {
                 if (SetProperty(ref _rememberMe, value))
                 {
-                    this.checkIfPasswordNeeded();
+                    this.CheckIfPasswordNeeded();
                 }
             }
         }
@@ -65,8 +68,8 @@ namespace WWPasswordVault.WinUI.ViewModels
             set => SetProperty(ref _isLoginInfoBarOpen, value);
         }
 
-        private string? _infoMessage;
-        public string? InfoMessage
+        private string _infoMessage = string.Empty;
+        public string InfoMessage
         {
             get => _infoMessage;
             set => SetProperty(ref _infoMessage, value);
@@ -93,8 +96,8 @@ namespace WWPasswordVault.WinUI.ViewModels
             set => SetProperty(ref _isRegisteredUser, value);
         }
 
-        private string? _loginButtonText = "Login";
-        public string? LoginButtonText
+        private string _loginButtonText = "Login";
+        public string LoginButtonText
         {
             get => _loginButtonText;
             set => SetProperty(ref _loginButtonText, value);
@@ -106,24 +109,12 @@ namespace WWPasswordVault.WinUI.ViewModels
             get => _selectedUser;
             set
             {
-                if (SetProperty(ref _selectedUser, value))
+                if (!SetProperty(ref _selectedUser, value))
+                    return;
+
+                if (value != null)
                 {
-                    if (_selectedUser != null && value is AppUser user)
-                    {
-                        Username = user.Username;
-                        user.HasCredentials = CoreService.Credentials.Exists(user.Username);
-                        user.IsRemembered = user.HasCredentials;
-                        RememberMe = user.IsRemembered;
-                        IsRegisteredUser = true;
-                        IsNeedingPassword = !user.IsRemembered;
-                        OnPropertyChanged(nameof(Username));
-                        OnPropertyChanged(nameof(RememberMe));
-                        AppService.Session.SetCurrentUser(user);
-                    }
-                    else
-                    {
-                        IsNeedingPassword = true;
-                    }
+                    OnSelectUser(value);
                 }
             }
         }
@@ -135,8 +126,8 @@ namespace WWPasswordVault.WinUI.ViewModels
             set => SetProperty(ref _isNeedingPassword, value);
         }
 
-        private ObservableCollection<AppUser>? _users;
-        public ObservableCollection<AppUser>? Users
+        private ObservableCollection<AppUser> _users = new ();
+        public ObservableCollection<AppUser> Users
         {
             get => _users;
             set => SetProperty(ref _users, value);
@@ -147,12 +138,53 @@ namespace WWPasswordVault.WinUI.ViewModels
         {
             LoginButton = new RelayCommand(OnLoginButtonClicked);
             RegisterButton = new RelayCommand(OnRegisterButtonClicked);
-            this.updateRegisteredUsers();
+            DeleteUserButton = new RelayCommand(OnDeleteUserClicked);
+            DeleteUserOnlyButton = new RelayCommand(OnDeleteUserOnlyClicked);
+
+            this.InitRegisteredUsers();
+        }
+
+        private void InitRegisteredUsers()
+        {
+            ObservableCollection<AppUser> tmpList = new ObservableCollection<AppUser>(CoreService.Auth.GetRegisteredUsers());
+            Users = tmpList;
+        }
+
+        private void OnSelectUser(object value)
+        {
+            if (value is AppUser user)
+            {
+                Debug.WriteLine("[Info] LoginViewModel: Selected user changed.");
+                Username = null;
+                ConfirmPassword = string.Empty;
+                user.HasCredentials = CoreService.Credentials.Exists(user.Username);
+                user.IsRemembered = user.HasCredentials;
+
+                RememberMe = user.IsRemembered;
+
+                AppService.Session.SetCurrentUser(user);
+
+                IsRegisteredUser = true;
+                IsNeedingPassword = !user.IsRemembered;
+                IsRegisterMode = false;
+            }
+            else
+            {
+                Debug.WriteLine("[Info] LoginViewModel: No registered user.");
+                AppService.Session.SetCurrentUser(null);
+
+                IsRegisteredUser = false;
+                IsNeedingPassword = true;
+
+                this.CleanUI();
+            }
+            IsLoginInfoBarOpen = false;
         }
 
         private void OnLoginButtonClicked()
         {
-            if (_isRegisterMode)
+            IsLoginInfoBarOpen = false;
+            if (IsRegisterMode)
             {
                 //Check on registration if the two passwords are the same
                 if (Password != ConfirmPassword)
@@ -172,43 +204,51 @@ namespace WWPasswordVault.WinUI.ViewModels
                 InfoMessage = "Registration done";
                 IsLoginInfoBarOpen = true;
                 IsRegisterMode = false;
-                this.updateRegisteredUsers();
+                this.InitRegisteredUsers();
                 SelectedUser = _newUser;
                 
                 return;
             }
 
-            Debug.WriteLine($"[Info] LoginViewModel: Login button clicked with Username: {Username} and Password: {Password}");
-            bool _result = AppService.Session.UnlockSession(Username ?? string.Empty, Password ?? string.Empty, RememberMe);
-            if (!_result)
+            var _currentUser = AppService.Session.CurrentUser;
+            if (_currentUser != null)
             {
-                InfoMessage = "Login Failed: \nInvalid username or password.";
-                IsLoginInfoBarOpen = true;
-                return;
-            }
-            else
-            {
-                var _currentUser = AppService.Session.CurrentUser;
-                if (!_currentUser!.HasCredentials)
+                Debug.WriteLine($"[Info] LoginViewModel: Login button clicked with Username: {_currentUser.Username} and Password: {Password}");
+                bool _result = AppService.Session.UnlockSession(_currentUser.Username ?? string.Empty, Password ?? string.Empty, RememberMe);
+                if (!_result)
                 {
-                    var _tmpKEK = CoreService.Auth.CreateKEK(_currentUser, Password!);
-                    AppService.Session.SetKEK(_tmpKEK);
-                    CoreService.Crypt.DecryptVaultKey(AppService.Session.KEK, _currentUser!.EncryptedVaultKey._iv, _currentUser.EncryptedVaultKey._ciphertext, _currentUser.EncryptedVaultKey._tag, out byte[] vaultKey);
-                    AppService.Session.VaultKey = vaultKey;
+                    InfoMessage = "Login Failed: \nInvalid username or password.";
+                    IsLoginInfoBarOpen = true;
+                    return;
                 }
                 else
                 {
-                    AppService.Session.VaultKey = CoreService.Credentials.Load(_currentUser!.Username);
+                    if (_currentUser != null && !_currentUser.HasCredentials)
+                    {
+                        var _tmpKEK = CoreService.Auth.CreateKEK(_currentUser, Password!);
+                        AppService.Session.SetKEK(_tmpKEK);
+                        CoreService.Crypt.DecryptVaultKey(AppService.Session.KEK, _currentUser!.EncryptedVaultKey._iv, _currentUser.EncryptedVaultKey._ciphertext, _currentUser.EncryptedVaultKey._tag, out byte[] vaultKey);
+                        AppService.Session.VaultKey = vaultKey;
+                    }
+                    else
+                    {
+                        AppService.Session.VaultKey = CoreService.Credentials.Load(_currentUser!.Username);
+                    }
                 }
+            }
+            else
+            {
+                InfoMessage = "Login Failed: \nNo valid user.";
+                IsLoginInfoBarOpen = true;
+                return;
             }
         }
 
         private void OnRegisterButtonClicked()
         {
-            bool _result = CoreService.Auth.UserExists(Username);
             Debug.WriteLine("[Info] LoginViewModel: Register button clicked.");
             IsLoginInfoBarOpen = true;
-            if (_result)
+            if (CoreService.Auth.UserExists(Username) || AppService.Session.CurrentUser != null)
             {
                 InfoMessage = "Registration Failed: \nUser already exists.";
                 Debug.WriteLine("[Info] LoginViewModel: User already exist");
@@ -220,39 +260,155 @@ namespace WWPasswordVault.WinUI.ViewModels
             }
         }
 
-        private void updateRegisteredUsers()
+        private void OnDeleteUserClicked()
         {
-            Users = new ObservableCollection<AppUser>(CoreService.Auth.GetRegisteredUsers());
+            if (AppService.Session.CurrentUser == null)
+                return;
+
+            if (CoreService.Auth.VerifyUser(AppService.Session.CurrentUser, Password))
+            {
+                Debug.WriteLine("[Info] LoginViewModel: Delete user button clicked.");
+
+                AppUser? _currentUser = new AppUser();
+                _currentUser = AppService.Session.CurrentUser;
+                this.FindAndDeleteCredentials(_currentUser);
+                this.FindAndDeletePrograms(_currentUser);
+                AppService.Session.CurrentUser = null;
+                CoreService.Auth.DeleteUser(_currentUser);
+                this.InitRegisteredUsers();
+
+                // Workaround to avoid crash when the last entry in the list is deleted
+                if (Users.Count > 0)
+                {
+                    SelectedUser = Users.First();
+                }
+                else
+                {
+                    SelectedUser = null;
+                }
+
+                if (Users != null)
+                    CoreService.JsonUserStorage.SaveUserData(ConvertToList(Users));
+
+                CleanUI();
+            }
+            else
+            {
+                InfoMessage = "Login Failed: \nInvalid username or password.";
+                IsLoginInfoBarOpen = true;
+            }
         }
 
-        private void checkIfPasswordNeeded()
+        private void OnDeleteUserOnlyClicked()
         {
+            if (AppService.Session.CurrentUser == null)
+                return;
+
+            if (CoreService.Auth.VerifyUser(AppService.Session.CurrentUser, Password))
+            {
+                Debug.WriteLine("[Info] LoginViewModel: Delete user button clicked.");
+
+                AppUser _currentUser = AppService.Session.CurrentUser;
+                this.FindAndDeleteCredentials(_currentUser);
+                CoreService.Auth.DeleteUser(_currentUser);
+                SelectedUser = null;
+                this.InitRegisteredUsers();
+
+                // Workaround to avoid crash when the last entry in the list is deleted
+                if (Users.Count > 0)
+                {
+                    SelectedUser = Users.First();
+                }
+                else
+                {
+                    SelectedUser = null;
+                }
+
+                if (Users != null)
+                    CoreService.JsonUserStorage.SaveUserData(ConvertToList(Users)); // list and obs. collection
+
+                CleanUI();
+            }
+            else
+            {
+                InfoMessage = "Login Failed: \nInvalid username or password.";
+                IsLoginInfoBarOpen = true;
+            }
+        }
+
+        
+
+        private void FindAndDeleteCredentials(AppUser user)
+        {
+            if (CoreService.Credentials.Exists(user.Username) && !string.IsNullOrEmpty(user.Username))
+            {
+                Debug.WriteLine("[Info] LoginViewModel: Delete found credentials.");
+                CoreService.Credentials.Delete(user.Username);
+            }
+        }
+
+        private void FindAndDeletePrograms(AppUser user)
+        {
+            if (AppService.Session.CurrentUser != null && string.IsNullOrEmpty(AppService.Session.CurrentUser.Username))
+            {
+                return;
+            }
+            Debug.WriteLine("[Info] LoginViewModel: Deleting all associated programs");
+            List<VaultEntry> _tmpList = AppService.VaultEntrys.GetVaultEntrys();
+            _tmpList.RemoveAll(entry => entry._appUser == AppService.Session.CurrentUser!.Username);
+            CoreService.JsonVaultStorage.SaveVaultList(_tmpList);
+        }
+
+        private void CheckIfPasswordNeeded()
+        {
+            Debug.WriteLine("[Info] LoginViewModel: Check if password is needed.");
             if (_rememberMe == false)
             {
-                Debug.WriteLine("Password needed.");
+                Debug.WriteLine("[Info] LoginViewModel: Password needed.");
                 IsNeedingPassword = true;
                 return;
             }
 
             if (AppService.Session.CurrentUser != null)
             {
-                Debug.WriteLine("User selected.");
 
                 if (AppService.Session.CurrentUser.HasCredentials)
                 {
-                    Debug.WriteLine("User has credentials.");
+                    Debug.WriteLine("[Info] LoginViewModel: User has credentials.");
                     IsNeedingPassword = false;
                 }
                 else
                 {
-                    Debug.WriteLine("User hasn´t credentials.");
+                    Debug.WriteLine("[Info] LoginViewModel: User hasn´t credentials. Needs password.");
                     IsNeedingPassword = true;
                 }
             }
             else
             {
-                Debug.WriteLine("No user selected.");
+                Debug.WriteLine("[Info] LoginViewModel: No user selected.");
             }
+        }
+
+        private List<AppUser> ConvertToList(object toConvert)
+        {
+            List<AppUser> _tmpList = new();
+            if (toConvert is ObservableCollection<AppUser>)
+            {
+                foreach (AppUser entry in (ObservableCollection<AppUser>)toConvert)
+                {
+                    _tmpList.Add(entry);
+                }
+            }
+            return _tmpList;
+        }
+
+        private void CleanUI()
+        {
+            Debug.WriteLine("[Info] LoginViewModel: Cleaning UI.");
+
+            Username = string.Empty;
+            Password = string.Empty;
+            ConfirmPassword = string.Empty;
         }
     }
 }

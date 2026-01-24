@@ -5,6 +5,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
+using WWPasswordVault.Core.Models;
 
 namespace WWPasswordVault.Core.Services.Storage
 {
@@ -62,6 +63,14 @@ namespace WWPasswordVault.Core.Services.Storage
         {
             // Implementation for saving vault entries to JSON file
             var jsonData = System.Text.Json.JsonSerializer.Serialize(VaultEntries, new System.Text.Json.JsonSerializerOptions { WriteIndented = true });
+            File.WriteAllText(VaultDataFilePath, jsonData, Encoding.UTF8);
+            Debug.WriteLine("[Info] JsonStorageVaultService: Saved vault entries to file.");
+        }
+
+        public void SaveVaultList(List<VaultEntry> _tmpList)
+        {
+            // Implementation for saving vault entries to JSON file
+            var jsonData = System.Text.Json.JsonSerializer.Serialize(_tmpList, new System.Text.Json.JsonSerializerOptions { WriteIndented = true });
             File.WriteAllText(VaultDataFilePath, jsonData, Encoding.UTF8);
             Debug.WriteLine("[Info] JsonStorageVaultService: Saved vault entries to file.");
         }

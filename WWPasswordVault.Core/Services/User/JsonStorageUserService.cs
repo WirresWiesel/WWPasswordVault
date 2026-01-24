@@ -17,8 +17,8 @@ namespace WWPasswordVault.Core.Services.User
 
         public JsonStorageUserService()
         {
-            Debug.WriteLine("[Info] JsonStorageVaultService: Initializing JSON storage vault service.");
-            Debug.WriteLine($"[Info] JsonStorageVaultService: Vault file path is {UserDataFilePath}");
+            Debug.WriteLine("[Info] JsonStorageVaultService: Initializing JSON storage user service.");
+            Debug.WriteLine($"[Info] JsonStorageVaultService: User file path is {UserDataFilePath}");
 
             _initializeUserStorage();
         }

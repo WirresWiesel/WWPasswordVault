@@ -48,6 +48,13 @@ namespace WWPasswordVault.WinUI
         {
             _window = new MainWindow();
             _window.Activate();
+
+            this.UnhandledException += (s, e) =>
+            {
+                System.Diagnostics.Debug.WriteLine(e.Exception.ToString());
+                e.Handled = true;
+            };
+
         }
     }
 }

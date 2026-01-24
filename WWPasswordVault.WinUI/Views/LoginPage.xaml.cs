@@ -12,6 +12,8 @@ using System.Linq;
 using System.Runtime.InteropServices.WindowsRuntime;
 using Windows.Foundation;
 using Windows.Foundation.Collections;
+using WWPasswordVault.Core.Models;
+using WWPasswordVault.WinUI.ViewModels;
 
 // To learn more about WinUI, the WinUI project structure,
 // and more about our project templates, see: http://aka.ms/winui-project-info.
@@ -27,6 +29,17 @@ namespace WWPasswordVault.WinUI.Views
         {
             InitializeComponent();
             this.DataContext = new ViewModels.LoginViewModel();
+        }
+        
+        private void OnDropDownClosed(object sender, object e)
+        {
+            if (sender is ComboBox cb)
+            {
+                if (cb.SelectedItem == null)
+                {
+                    cb.SelectedIndex = -1;
+                }
+            }
         }
     }
 }

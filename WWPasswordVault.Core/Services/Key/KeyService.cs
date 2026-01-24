@@ -25,8 +25,12 @@ namespace WWPasswordVault.Core.Services.Key
 
         public bool VerifyString(string password, byte[] storedKey, byte[] storedSalt)
         {
-            using var pbkdf2 = new Rfc2898DeriveBytes(password, storedSalt, DefaultIterations, HashAlgorithmName.SHA256);
-            byte[] computedHash = pbkdf2.GetBytes(KeySize);
+            byte[] computedHash = Array.Empty<byte>();
+            if (password != null)
+            {
+                using var pbkdf2 = new Rfc2898DeriveBytes(password, storedSalt, DefaultIterations, HashAlgorithmName.SHA256);
+                computedHash = pbkdf2.GetBytes(KeySize);
+            }
             return computedHash.SequenceEqual(storedKey);
         }
 

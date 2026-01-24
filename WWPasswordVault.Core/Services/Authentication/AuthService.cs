@@ -161,9 +161,27 @@ namespace WWPasswordVault.Core.Services.Authentication
             CoreService.JsonUserStorage.SaveUserData(_registeredUsers);
         }
 
+        public void DeleteUser(AppUser user)
+        {
+            _registeredUsers.Remove(user);
+        }
+
         public byte[] CreateKEK(AppUser user, string password)
         {
             return CoreService.Key.CreateKey(password, user.VaultKeySalt);
+        }
+
+        public bool VerifyUser(AppUser user, string password)
+        {
+            // catch/avoid exception when a something is null
+            if (user == null)
+                return false;
+            if (string.IsNullOrEmpty(password))
+                return false;
+            if (user.PasswordKey == null || user.PasswordSalt == null)
+                return false;
+
+            return CoreService.Key.VerifyString(password, user.PasswordKey, user.PasswordSalt);
         }
     }
 }

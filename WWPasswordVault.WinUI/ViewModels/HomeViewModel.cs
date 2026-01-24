@@ -217,6 +217,7 @@ namespace WWPasswordVault.WinUI.ViewModels
                 Debug.WriteLine("[Info] HomeViewModel: Entry deleted");
             }
             this.UpdateVaultEntries();
+            CoreService.JsonVaultStorage.SaveVaultEntries();
         }
 
         private void  OnEditEntryCommand()
@@ -235,7 +236,7 @@ namespace WWPasswordVault.WinUI.ViewModels
 
                 if (!string.IsNullOrEmpty(ShownPassword))
                 {
-                    CoreService.Crypt.EncryptPasswordString(AppService.Session.CurrentUser!.PasswordKey, ShownPassword, out byte[] _ciphertext, out byte[] _tag, out byte[] _iv, out string _version);
+                    CoreService.Crypt.EncryptPasswordString(AppService.Session.VaultKey, ShownPassword, out byte[] _ciphertext, out byte[] _tag, out byte[] _iv, out string _version);
                     SelectedVaultEntry._password._ciphertext = _ciphertext;
                     SelectedVaultEntry._password._tag = _tag;
                     SelectedVaultEntry._password._iv = _iv;

@@ -58,6 +58,9 @@ namespace WWPasswordVault.WinUI
         private void OnSessionServicePropertyChanged(object? sender, PropertyChangedEventArgs e)
         {
             Debug.WriteLine("[Info] MainWindow: Something changed in Session.");
+            if (sender == null)
+                return;
+
             if (e.PropertyName == nameof(SessionService.IsLocked))
             {
                 if (AppService.Session.IsLocked)
