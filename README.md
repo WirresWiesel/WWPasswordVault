@@ -15,6 +15,25 @@ Session-based lock / unlock handling
 
 Clean separation between Core and UI (WinUI 3) projects
 
+Improved credential organization with multi-category support
+  - Assign multiple categories to a single vault entry
+  - Categories can be reused across entries
+  - Better filtering and overview for large vaults
+
+  🗂 Category Management
+
+WWPasswordVault supports multiple categories per vault entry, allowing better organization of credentials such as:
+
+  - Websites
+
+  - Games & Launchers
+
+  - Financial and insurance accounts
+
+  - Work-related or personal credentials
+
+Categories are treated as structured data instead of free text, enabling cleaner UI logic, easier filtering, and future extensibility (e.g. tags, icons, or category-based views).
+
 🧱 Architecture
 
 The solution is split into two main layers:
@@ -31,9 +50,9 @@ The application follows a state-driven design, where navigation and UI behavior 
 
 This project is currently under active development and serves as:
 
-a learning project for modern WinUI 3 + MVVM
+  - a learning project for modern WinUI 3 + MVVM
 
-a foundation for a secure local password manager
+  - a foundation for a secure local password manager
 
 ⚠️ Disclaimer
 
