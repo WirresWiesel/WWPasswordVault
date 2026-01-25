@@ -7,6 +7,7 @@ using System.Diagnostics;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
+using Windows.ApplicationModel.VoiceCommands;
 using WWPasswordVault.Core.CoreServices;
 using WWPasswordVault.Core.Models;
 using WWPasswordVault.WinUI.AppServices;
@@ -15,6 +16,8 @@ namespace WWPasswordVault.WinUI.ViewModels
 {
     public class EditViewModel : ObservableObject
     {
+        private StringBuilder cat = new();
+
         #region Commands
         public IRelayCommand SaveButton { get; }
         public IRelayCommand CancelButton { get; }
@@ -39,7 +42,20 @@ namespace WWPasswordVault.WinUI.ViewModels
         public string? Category
         {
             get => _category;
-            set => SetProperty(ref _category, value);
+            set
+            {
+                if (SetProperty(ref _category, value))
+                {
+                    Debug.WriteLine($"Category: {value}");
+                }
+            }
+        }
+
+        private string _categoryString = string.Empty;
+        public string CategoryString
+        {
+            get => _categoryString;
+            set => SetProperty(ref _categoryString, value);
         }
 
         private string? _password;
@@ -63,11 +79,33 @@ namespace WWPasswordVault.WinUI.ViewModels
             set => SetProperty(ref _savedCategorys, value);
         }
         
-        private string? _selectedCategory;
-        public string? SelectedCategory
+        private string? _selectedCategorys;
+        public string? SelectedCategorys
         {
-            get => _selectedCategory;
-            set => SetProperty(ref _selectedCategory, value);
+            get => _selectedCategorys;
+            set
+            {
+                if (SetProperty(ref _selectedCategorys, value))
+                {
+                    Debug.WriteLine($"SelectedCategory: {value}");
+                    if (SelectedCategorys != null && value != null)
+                    {
+                        List<string> _tmpList = CategoryString.Split(",", StringSplitOptions.TrimEntries).ToList();
+                        if (!_tmpList.Contains(value))
+                        {
+                            if (cat.Length != 0)
+                            {
+                                cat.Append(", " + _selectedCategorys);
+                            }
+                            else
+                            {
+                                cat.Append(_selectedCategorys);
+                            }
+                            CategoryString = cat.ToString();
+                        }
+                    }
+                }
+            }
         }
 
         private string? _newCategory;
@@ -105,12 +143,14 @@ namespace WWPasswordVault.WinUI.ViewModels
                 _appUser = CurrentUser.Username,
                 _title = Title,
                 _username = Username,
-                _category = SelectedCategory,
+                _categoryList = this.SeparateCategorys(),
                 _password = _encValue
             };
+            newEntry.GetCategorysAsString();
             // Save logic here
             CoreService.JsonVaultStorage.AddVaultEntry(newEntry);
             CoreService.JsonVaultStorage.SaveVaultEntries();
+            this.transferCategorys();
             this.clearTextBoxes();
         }
 
@@ -123,8 +163,10 @@ namespace WWPasswordVault.WinUI.ViewModels
         {
             Username = string.Empty;
             Title = string.Empty;
-            SelectedCategory = string.Empty;
+            Category = string.Empty;
             Password = string.Empty;
+            SelectedCategorys = null;
+            CategoryString = string.Empty;
         }
 
         private void transferCategorys()
@@ -134,6 +176,17 @@ namespace WWPasswordVault.WinUI.ViewModels
             {
                 SavedCategorys.Add(entry);
             }
+        }
+
+        private List<string> SeparateCategorys()
+        {
+            List<string> categories = new();
+            if (CategoryString != null)
+            {
+                categories = CategoryString.Split(",", StringSplitOptions.TrimEntries).ToList();
+            }
+
+            return categories;
         }
     }
 }

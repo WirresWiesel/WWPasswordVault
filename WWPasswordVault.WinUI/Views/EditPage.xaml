@@ -19,10 +19,16 @@
                 Header="Username / E-Mail"
                 Text="{Binding Username, Mode=TwoWay}" />
 
+            <TextBox
+                Header="Category Tags"
+                Text="{Binding CategoryString}"
+                IsReadOnly="True" />
+
             <ComboBox
                 Header="Category"
                 ItemsSource="{Binding SavedCategorys}"
-                SelectedItem="{Binding SelectedCategory, Mode=TwoWay}"
+                SelectedItem="{Binding SelectedCategorys, Mode=TwoWay}"
+                Text="{Binding Category, Mode=TwoWay}"
                 IsEditable="True"
                 HorizontalAlignment="Stretch"/>
 

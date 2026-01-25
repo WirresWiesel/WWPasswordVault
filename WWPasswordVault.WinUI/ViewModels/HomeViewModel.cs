@@ -15,6 +15,7 @@ using WWPasswordVault.Core.CoreServices;
 using WWPasswordVault.Core.Models;
 using WWPasswordVault.WinUI.AppServices;
 using Windows.ApplicationModel;
+using System.ComponentModel;
 
 namespace WWPasswordVault.WinUI.ViewModels
 {
@@ -90,6 +91,7 @@ namespace WWPasswordVault.WinUI.ViewModels
                 }
             }
         }
+
 
         private VaultEntry? _selectedVaultEntry;
         public VaultEntry? SelectedVaultEntry
@@ -233,6 +235,10 @@ namespace WWPasswordVault.WinUI.ViewModels
             if (SelectedVaultEntry != null)
             {
                 var rootEntry = VaultEntries.FirstOrDefault(p => p._title == SelectedVaultEntry._title);
+                if (rootEntry != null)
+                {
+                    rootEntry.UpdateCategoryList();
+                }
 
                 if (!string.IsNullOrEmpty(ShownPassword))
                 {

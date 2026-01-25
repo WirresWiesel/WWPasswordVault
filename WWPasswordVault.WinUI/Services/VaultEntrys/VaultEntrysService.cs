@@ -5,6 +5,7 @@ using System.Diagnostics;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
+using WinRT;
 using WWPasswordVault.Core.CoreServices;
 using WWPasswordVault.Core.Models;
 using WWPasswordVault.WinUI.AppServices;
@@ -66,7 +67,7 @@ namespace WWPasswordVault.WinUI.Services.VaultEntrys
             {
                 List<VaultEntry>? _tmpList = new List<VaultEntry>();
                 _tmpList = appUserVaultEntries
-                    .Where(s => s._category == category)
+                    .Where(s => s._categoryList.Contains(category))
                     .ToList();
 
                 foreach (VaultEntry entry in _tmpList)
@@ -89,9 +90,16 @@ namespace WWPasswordVault.WinUI.Services.VaultEntrys
             Categorys = new();
             foreach (VaultEntry entry in appUserVaultEntries)
             {
-                if (!Categorys.Contains(entry._category))
+                entry.GetCategorysAsString();
+                if (entry._categoryList == null)
+                    break;
+
+                foreach (string category in entry._categoryList)
                 {
-                    Categorys.Add(entry._category);
+                    if (!Categorys.Contains(category))
+                    {
+                        Categorys.Add(category);
+                    }
                 }
             }
 

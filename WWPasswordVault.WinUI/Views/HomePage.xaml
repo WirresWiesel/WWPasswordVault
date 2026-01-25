@@ -141,7 +141,7 @@
                                 <TextBlock
                                     Grid.Column="2"
                                     HorizontalAlignment="Right"
-                                    Text="{x:Bind _category}"/>
+                                    Text="{x:Bind _categorys}"/>
                             </Grid>
                         </DataTemplate>
                     </ListView.ItemTemplate>
@@ -225,7 +225,7 @@
 
                     <TextBox
                         Header="Category"
-                        Text="{Binding SelectedVaultEntry._category, Mode=TwoWay}"
+                        Text="{Binding SelectedVaultEntry._categorys, Mode=TwoWay}"
                         IsReadOnly="{Binding IsEditMode, Converter={StaticResource BoolInverse}}"/>
                 </StackPanel>
 
