@@ -10,7 +10,7 @@
   <Identity
     Name="a8e27bce-d91d-4308-8abc-64b854483519"
     Publisher="CN=Pasca"
-    Version="1.0.2.0" />
+    Version="1.0.3.0" />
 
   <mp:PhoneIdentity PhoneProductId="a8e27bce-d91d-4308-8abc-64b854483519" PhonePublisherId="00000000-0000-0000-0000-000000000000"/>
 
