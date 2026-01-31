@@ -19,11 +19,6 @@
                 Header="Username / E-Mail"
                 Text="{Binding Username, Mode=TwoWay}" />
 
-            <TextBox
-                Header="Category Tags"
-                Text="{Binding CategoryString}"
-                IsReadOnly="True" />
-
             <ComboBox
                 Header="Category"
                 ItemsSource="{Binding SavedCategorys}"
@@ -40,6 +35,12 @@
                 <Button Content="Save" Command="{Binding SaveButton}" />
                 <Button Content="Cancel" Command="{Binding CancelButton}" />
             </StackPanel>
+            
+            <TextBox
+                Header="Category Tags"
+                IsTabStop="False"
+                Text="{Binding CategoryString}"
+                IsReadOnly="True" />
 
         </StackPanel>
 

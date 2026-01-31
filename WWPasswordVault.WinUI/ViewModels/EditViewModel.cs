@@ -167,6 +167,7 @@ namespace WWPasswordVault.WinUI.ViewModels
             Password = string.Empty;
             SelectedCategorys = null;
             CategoryString = string.Empty;
+            cat.Clear();
         }
 
         private void transferCategorys()

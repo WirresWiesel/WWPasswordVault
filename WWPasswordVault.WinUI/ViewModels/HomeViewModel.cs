@@ -68,14 +68,34 @@ namespace WWPasswordVault.WinUI.ViewModels
         public ObservableCollection<VaultEntry> ShownVaultEntries
         {
             get => _shownVaultEntries;
-            set => SetProperty(ref _shownVaultEntries, value);
+            set
+            {
+                if (value == null)
+                {
+                    return;
+                }
+
+                var sortedOutput = value.OrderBy(e => e._title).ToList();
+
+                SetProperty(ref _shownVaultEntries, new ObservableCollection<VaultEntry>(sortedOutput));
+            }
         }
 
         private ObservableCollection<string> _categorys = new();
         public ObservableCollection<string> Categorys
         {
             get => _categorys;
-            set => SetProperty(ref _categorys, value);
+            set
+            {
+                if (value == null)
+                {
+                    return;
+                }
+
+                var sortedOutput = value.OrderBy(e => e).ToList();
+
+                SetProperty(ref _categorys, new ObservableCollection<string>(sortedOutput));
+            }
         }
 
         private string? _selectedCategory;
